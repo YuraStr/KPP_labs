@@ -96,156 +96,155 @@ class Board extends GridPane {
     }
   }
 
-    public void setMines() {
-      int n = countOfBombs;
+  public void setMines() {
+    int n = countOfBombs;
 
-      while (n > 0) {
-        int i = (int) (Math.random() * rowCount);
-        int j = (int) (Math.random() * columnCount);
+    while (n > 0) {
+      int i = (int) (Math.random() * rowCount);
+      int j = (int) (Math.random() * columnCount);
 
-        if (!cells[i][j].isBomb()) {
-          cells[i][j].setBomb(true);
-          n--;
-        }
-      }
-
-      for (int i = 0; i < rowCount; i++) {
-        for (int j = 0; j < columnCount; j++) {
-          countOfNeighbors(i, j);
-          cells[i][j].setText();
-        }
+      if (!cells[i][j].isBomb()) {
+        cells[i][j].setBomb(true);
+        n--;
       }
     }
 
-    public void countOfNeighbors(int x, int y) {
-      for (int i = -1; i <= 1; i++) {
-        int newX = x + i;
+    for (int i = 0; i < rowCount; i++) {
+      for (int j = 0; j < columnCount; j++) {
+        countOfNeighbors(i, j);
+        cells[i][j].setText();
+      }
+    }
+  }
 
-        if (newX < 0 || newX >= rowCount) {
+  public void countOfNeighbors(int x, int y) {
+    for (int i = -1; i <= 1; i++) {
+      int newX = x + i;
+
+      if (newX < 0 || newX >= rowCount) {
+        continue;
+      }
+
+      for (int j = -1; j <= 1; j++) {
+        int newY = y+j;
+
+        if (newY < 0 || newY >= columnCount) {
           continue;
         }
 
-        for (int j = -1; j <= 1; j++) {
-          int newY = y+j;
-
-          if (newY < 0 || newY >= columnCount) {
-            continue;
-          }
-
-          if (i == 0 && j == 0) {
-            continue;
-          }
-
-          if(cells[newX][newY].isBomb()) {
-            cells[x][y].addNeighbor();
-          }
-        }
-      }
-    }
-
-    public void openEmptyCells(int x, int y) {
-      for (int i = -1; i <= 1; i++) {
-        int newX = x + i;
-
-        if (newX < 0 || newX >= rowCount) {
+        if (i == 0 && j == 0) {
           continue;
         }
 
-        for (int j = -1; j <= 1; j++) {
-          int newY = y+j;
-
-          if (newY < 0 || newY >= columnCount) {
-            continue;
-          }
-
-          Cell cell = cells[newX][newY];
-          if (cell.isEmpty() && !cell.isOpen()) {
-            cell.open();
-            openEmptyCells(newX, newY);
-            openAroundCells(newX, newY);
-          }
+        if(cells[newX][newY].isBomb()) {
+          cells[x][y].addNeighbor();
         }
       }
     }
+  }
 
-    public void openAroundCells(int x, int y) {
-      for (int i = -1; i <= 1; i++) {
-        int newX = x + i;
+  public void openEmptyCells(int x, int y) {
+    for (int i = -1; i <= 1; i++) {
+      int newX = x + i;
 
-        if (newX < 0 || newX >= rowCount) {
+      if (newX < 0 || newX >= rowCount) {
+        continue;
+      }
+
+      for (int j = -1; j <= 1; j++) {
+        int newY = y+j;
+
+        if (newY < 0 || newY >= columnCount) {
           continue;
         }
 
-        for (int j = -1; j <= 1; j++) {
-          int newY = y + j;
-
-          if (newY < 0 || newY >= columnCount) {
-            continue;
-          }
-
-          if (i == 0 && j == 0) {
-            continue;
-          }
-
-          Cell cell = cells[newX][newY];
-          if (!cell.isBomb()) {
-            cell.open();
-          }
+        Cell cell = cells[newX][newY];
+        if (cell.isEmpty() && !cell.isOpen()) {
+          cell.open();
+          openEmptyCells(newX, newY);
+          openAroundCells(newX, newY);
         }
       }
     }
+  }
 
-    public void clearAllCells() {
-      for (int i = 0; i < rowCount; i++) {
-        for (int j = 0; j < columnCount; j++) {
-          cells[i][j].open();
+  public void openAroundCells(int x, int y) {
+    for (int i = -1; i <= 1; i++) {
+      int newX = x + i;
+
+      if (newX < 0 || newX >= rowCount) {
+        continue;
+      }
+
+      for (int j = -1; j <= 1; j++) {
+        int newY = y + j;
+
+        if (newY < 0 || newY >= columnCount) {
+          continue;
+        }
+
+        if (i == 0 && j == 0) {
+          continue;
+        }
+
+        Cell cell = cells[newX][newY];
+        if (!cell.isBomb()) {
+          cell.open();
         }
       }
     }
+  }
 
-    public boolean isWon() {
-      for (int i = 0; i < rowCount; i++) {
-        for (int j = 0; j < columnCount; j++) {
-          if (!cells[i][j].isBomb() && !cells[i][j].isOpen()) {
-            return false;
-          }
+  public void clearAllCells() {
+    for (int i = 0; i < rowCount; i++) {
+      for (int j = 0; j < columnCount; j++) {
+        cells[i][j].open();
+      }
+    }
+  }
+
+  public boolean isWon() {
+    for (int i = 0; i < rowCount; i++) {
+      for (int j = 0; j < columnCount; j++) {
+        if (!cells[i][j].isBomb() && !cells[i][j].isOpen()) {
+          return false;
         }
       }
-      return true;
     }
+    return true;
+  }
 
-    public void openWonWindow() {
-      inGame = false;
+  public void openWonWindow() {
+    inGame = false;
 
-      BorderPane pane = new BorderPane();
+    BorderPane pane = new BorderPane();
 
-      Text text = new Text("You have cleared the field!");
-      text.setFont(Font.font("Arial", FontWeight.BLACK, 14));
-      pane.setCenter(text);
+    Text text = new Text("You have cleared the field!");
+    text.setFont(Font.font("Arial", FontWeight.BLACK, 14));
+    pane.setCenter(text);
 
-      Button closeButton = new Button("Close");
-      closeButton.setAlignment(Pos.CENTER);
+    Button closeButton = new Button("Close");
+    closeButton.setAlignment(Pos.CENTER);
 
+    HBox hBox = new HBox();
+    hBox.setAlignment(Pos.CENTER);
+    hBox.getChildren().add(closeButton);
+    hBox.setTranslateY(-15);
+    pane.setBottom(hBox);
 
-      HBox hBox = new HBox();
-      hBox.setAlignment(Pos.CENTER);
-      hBox.getChildren().add(closeButton);
-      hBox.setTranslateY(-15);
-      pane.setBottom(hBox);
+    Scene wonScene = new Scene(pane, WONWINDOW_WIDTH, WONWINDOW_HEIGHT);
 
-      Scene wonScene = new Scene(pane, WONWINDOW_WIDTH, WONWINDOW_HEIGHT);
+    Stage wonStage = new Stage();
+    wonStage.setTitle("Congratulations!");
+    wonStage.setScene(wonScene);
+    wonStage.show();
 
-      Stage wonStage = new Stage();
-      wonStage.setTitle("Congratulations!");
-      wonStage.setScene(wonScene);
-      wonStage.show();
+    closeButton.setOnMouseClicked(event -> {
+      wonStage.close();
+    });
+  }
 
-      closeButton.setOnMouseClicked(event -> {
-        wonStage.close();
-      });
-    }
-
-    public int getRemainedBombs() {
+  public int getRemainedBombs() {
         return countOfBombs - countOfFlags;
     }
 }
