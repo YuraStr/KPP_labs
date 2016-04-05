@@ -8,6 +8,8 @@ import static java.lang.Thread.sleep;
  */
 
 public class Bot implements Runnable {
+  private static final int SLEEP_TIME = 700;
+
   private Thread thread;
   private Board board = new Board();
 
@@ -26,7 +28,7 @@ public class Bot implements Runnable {
           board.openCell(i, j);
           try {
             board.wait();
-            sleep(700);
+            sleep(SLEEP_TIME);
           } catch (InterruptedException exc) {
             System.out.println(exc.getMessage());
           }

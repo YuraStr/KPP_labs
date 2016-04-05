@@ -17,8 +17,11 @@ import java.util.ArrayList;
 import static java.lang.Thread.sleep;
 
 class Board extends GridPane {
-  private final int WONWINDOW_WIDTH = 250;
-  private final int WONWINDOW_HEIGHT = 120;
+  private static final int WONWINDOW_WIDTH = 250;
+  private static final int WONWINDOW_HEIGHT = 120;
+  private static final int FONT_SIZE = 14;
+  private static final int BOTTOM_INDENT = -15;
+
 
   private int rowCount;
   private int columnCount;
@@ -230,7 +233,7 @@ class Board extends GridPane {
     BorderPane pane = new BorderPane();
 
     Text text = new Text("You have cleared the field!");
-    text.setFont(Font.font("Arial", FontWeight.BLACK, 14));
+    text.setFont(Font.font("Arial", FontWeight.BLACK, FONT_SIZE));
     pane.setCenter(text);
 
     Button closeButton = new Button("Close");
@@ -239,7 +242,7 @@ class Board extends GridPane {
     HBox hBox = new HBox();
     hBox.setAlignment(Pos.CENTER);
     hBox.getChildren().add(closeButton);
-    hBox.setTranslateY(-15);
+    hBox.setTranslateY(BOTTOM_INDENT);
     pane.setBottom(hBox);
 
     Scene wonScene = new Scene(pane, WONWINDOW_WIDTH, WONWINDOW_HEIGHT);
