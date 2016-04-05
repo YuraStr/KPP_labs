@@ -12,6 +12,13 @@ public class Cell extends StackPane{
   private final int CELL_WIDTH = 20;
   private final int CELL_HEIGHT = 20;
 
+  private final int IMG_HEIGHT = 15;
+  private final int IMG_WIDTH = 15;
+
+  private final String BOMB_IMAGE_PATH = "img/imgBomb.png";
+  private final String FLAG_IMAGE_PATH = "img/imgRedFlag.png";
+
+
   private boolean bomb;
   private boolean open;
   private boolean flag;
@@ -38,7 +45,7 @@ public class Cell extends StackPane{
   public void setBomb(boolean b) {
     bomb = b;
     if (bomb) {
-      setImage("img/imgBomb.png");
+      setImage(BOMB_IMAGE_PATH);
     }
   }
 
@@ -72,7 +79,7 @@ public class Cell extends StackPane{
           label.setTextFill(Color.BROWN);
           break;
         case 6:
-          label.setTextFill(Color.AZURE);
+          label.setTextFill(Color.BURLYWOOD);
           break;
         case 7:
           label.setTextFill(Color.NAVY);
@@ -110,12 +117,12 @@ public class Cell extends StackPane{
   public void setFlag(boolean flag) {
     this.flag = flag;
     if (flag) {
-      setImage("img/imgRedFlag.png");
+      setImage(FLAG_IMAGE_PATH);
       label.setVisible(true);
     }
     else {
       if (bomb) {
-        setImage("img/imgBomb.png");
+        setImage(BOMB_IMAGE_PATH);
         label.setVisible(false);
       }
       else {
@@ -129,8 +136,8 @@ public class Cell extends StackPane{
   public void setImage(String path) {
     Image image = new Image(getClass().getResourceAsStream(path));
     ImageView img = new ImageView(image);
-    img.setFitHeight(15);
-    img.setFitWidth(15);
+    img.setFitHeight(IMG_HEIGHT);
+    img.setFitWidth(IMG_WIDTH);
     label.setGraphic(img);
     label.setText(null);
   }

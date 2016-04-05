@@ -12,6 +12,10 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
+
+import static java.lang.Thread.sleep;
+
 class Board extends GridPane {
   private final int WONWINDOW_WIDTH = 250;
   private final int WONWINDOW_HEIGHT = 120;
@@ -23,9 +27,11 @@ class Board extends GridPane {
 
   private boolean inGame;
 
+  private Bot bot;
+
   private Cell cells[][];
 
-  public void initCells(int rowCount, int columnCount, int countOfBombs) {
+  public void initCells(int rowCount, int columnCount, int countOfBombs, boolean useBot) {
     this.rowCount = rowCount;
     this.columnCount = columnCount;
     this.countOfBombs = countOfBombs;
@@ -44,9 +50,14 @@ class Board extends GridPane {
     }
 
     setAlignment(Pos.CENTER);
-
     setMines();
-    setMouseEvents();
+
+    if (useBot) {
+      bot = new Bot(this);
+    }
+    else {
+      setMouseEvents();
+    }
   }
 
   public void setMouseEvents() {
@@ -55,38 +66,37 @@ class Board extends GridPane {
         Cell cell = cells[i][j];
 
         cell.setOnMouseClicked(event -> {
-          if (inGame) {
-            if (!cell.isOpen()) {
-              if (event.getButton().equals(MouseButton.SECONDARY)) {
-                if (!cell.isFlag()) {
-                  cell.setFlag(true);
-                  countOfFlags++;
-                  return;
-                } else {
-                  cell.setFlag(false);
-                  countOfFlags--;
-                  return;
+          if (inGame && !cell.isOpen()) {
+            if (event.getButton().equals(MouseButton.SECONDARY)) {
+              if (!cell.isFlag()) {
+                cell.setFlag(true);
+                countOfFlags++;
+                return;
+              }
+              else {
+                cell.setFlag(false);
+                countOfFlags--;
+                return;
+              }
+            }
+
+            if (!cell.isFlag()) {
+              if (cell.isBomb()) {
+                clearAllCells();
+                cell.onBomb();
+              }
+              else
+              if (cell.isEmpty()) {
+                openEmptyCells(GridPane.getRowIndex(cell), GridPane.getColumnIndex(cell));
+                if (isWon()) {
+                  openWonWindow();
                 }
               }
-
-              if (!cell.isFlag()) {
-                if (cell.isBomb()) {
-                  clearAllCells();
-                  cell.onBomb();
-                }
-                else
-                if (cell.isEmpty()) {
-                  openEmptyCells(GridPane.getRowIndex(cell), GridPane.getColumnIndex(cell));
-                  if (isWon()) {
-                    openWonWindow();
-                  }
-                }
-                else
-                if (!cell.isEmpty()) {
-                  cell.open();
-                  if (isWon()) {
-                    openWonWindow();
-                  }
+              else
+              if (!cell.isEmpty()) {
+                cell.open();
+                if (isWon()) {
+                  openWonWindow();
                 }
               }
             }
@@ -245,6 +255,48 @@ class Board extends GridPane {
   }
 
   public int getRemainedBombs() {
-        return countOfBombs - countOfFlags;
+    return countOfBombs - countOfFlags;
+  }
+
+  public void openCell(int x, int y) {
+    synchronized (this) {
+      Cell cell = cells[x][y];
+
+      if (inGame && !cell.isOpen()) {
+        if (!cell.isFlag()) {
+          cell.open();
+          if (cell.isBomb()) {
+            clearAllCells();
+            cell.onBomb();
+            inGame = false;
+          } else if (cell.isEmpty()) {
+            openEmptyCells(x, y);
+            if (isWon()) {
+              openWonWindow();
+              inGame = false;
+            }
+          } else if (!cell.isEmpty()) {
+            cell.open();
+            if (isWon()) {
+              openWonWindow();
+              inGame = false;
+            }
+          }
+        }
+      }
+      this.notify();
     }
+  }
+
+  public int getRowCount() {
+    return rowCount;
+  }
+
+  public int getColumnCount() {
+    return columnCount;
+  }
+
+  public boolean isInGame() {
+    return inGame;
+  }
 }
