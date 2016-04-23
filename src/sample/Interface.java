@@ -14,11 +14,20 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * Menu window and main window
+ */
 public class Interface {
   private static final int SCENE_HEIGHT = 300;
-  private static final int SCENE_WIDTH = 300;
+  private static final int SCENE_WIDTH = 350;
   private static final int BUTTON_HEIGHT = 10;
   private static final int BUTTON_WIDTH = 100;
+  private static final int REPLAY_BUTTON_HEIGHT = 10;
+  private static final int REPLAY_BUTTON_WIDTH = 150;
 
   private static final int FONT_SIZE = 14;
 
@@ -45,10 +54,19 @@ public class Interface {
 
   private Stage stage;
 
+  private boolean inReplay = false;
+
+  /**
+   * Class constructor
+   * @param stage where add window objects
+   */
   public Interface(Stage stage) {
         this.stage = stage;
     }
 
+  /**
+   * Create menu window
+   */
   public void Menu() {
     BorderPane borderPane = new BorderPane();
 
@@ -87,13 +105,17 @@ public class Interface {
     startButton.setPrefWidth(BUTTON_WIDTH);
     startButton.setPrefHeight(BUTTON_HEIGHT);
     startButton.setAlignment(Pos.CENTER);
+    Button replayButton = new Button("Watch last replay");
+    replayButton.setPrefWidth(REPLAY_BUTTON_WIDTH);
+    replayButton.setPrefHeight(REPLAY_BUTTON_HEIGHT);
+    replayButton.setAlignment(Pos.CENTER);
 
     CheckBox useBotCheckBox = new CheckBox("Use bot");
     useBotCheckBox.setAlignment(Pos.CENTER);
 
     vBoxBottom.setAlignment(Pos.CENTER);
     vBoxBottom.setSpacing(SPACING_2);
-    vBoxBottom.getChildren().addAll(useBotCheckBox, startButton);
+    vBoxBottom.getChildren().addAll(useBotCheckBox, startButton, replayButton);
     vBoxBottom.setTranslateY(BOTTOM_INDENT);
     borderPane.setBottom(vBoxBottom);
 
@@ -123,13 +145,36 @@ public class Interface {
         }
       }
     });
+
+    replayButton.setOnMouseClicked(event -> {
+        try {
+          InputStream inputStream = new FileInputStream("Replay.txt");
+
+          int rowCount = inputStream.read();
+          int columnCount = inputStream.read();
+          int countOfBombs = inputStream.read();
+
+          inReplay = true;
+
+          Game(rowCount, columnCount, countOfBombs, false);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+    });
   }
 
+  /**
+   * Create main window
+   * @param rowCount      count of rows
+   * @param columnCount   count of columns
+   * @param countOfMines  count of mines
+   * @param useBot        true, if we want to use bot
+   */
   public void Game(int rowCount, int columnCount, int countOfMines, boolean useBot) {
     BorderPane root = new BorderPane();
 
     Board board = new Board();
-    board.initCells(rowCount, columnCount, countOfMines, useBot);
+    board.initCells(rowCount, columnCount, countOfMines, useBot, inReplay);
     root.setCenter(board);
 
     Button restartBtn = new Button("Restart");
@@ -143,7 +188,7 @@ public class Interface {
     });
 
     restartBtn.setOnMouseClicked(event -> {
-      board.initCells(rowCount, columnCount, countOfMines, useBot);
+      board.initCells(rowCount, columnCount, countOfMines, useBot, inReplay);
       remainedBombs.setText("Bombs remained: " + String.valueOf(board.getRemainedBombs()));
     });
 

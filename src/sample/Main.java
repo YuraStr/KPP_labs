@@ -3,6 +3,9 @@ package sample;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
+/**
+ * Main class
+ */
 public class Main extends Application {
 
   @Override

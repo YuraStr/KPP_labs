@@ -12,33 +12,59 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import static java.lang.Thread.sleep;
-
+/**
+ * Contains size of window, table of cells,
+ * some methods for work with board
+ */
 class Board extends GridPane {
+  private static final String REPLAY_FILE_NAME = "Replay.txt";
+
   private static final int WONWINDOW_WIDTH = 250;
   private static final int WONWINDOW_HEIGHT = 120;
   private static final int FONT_SIZE = 14;
   private static final int BOTTOM_INDENT = -15;
-
 
   private int rowCount;
   private int columnCount;
   private int countOfBombs;
   private int countOfFlags;
 
-  private boolean inGame;
+  private ArrayList<Integer> bombs;
+  private ArrayList<Integer> clicks;
 
-  private Bot bot;
+  private boolean inGame;
+  private boolean isReplay;
 
   private Cell cells[][];
 
-  public void initCells(int rowCount, int columnCount, int countOfBombs, boolean useBot) {
+  private Replay replay;
+
+  /**
+   * Initialize cells, add mines, start bot (if necessary)
+   * @param rowCount      Count of rows
+   * @param columnCount   Count of columns
+   * @param countOfBombs  Count of bombs
+   * @param useBot        true, if we want to use bot
+   * @param isReplay      true, if we want to watch last replay
+   */
+  public void initCells(int rowCount, int columnCount, int countOfBombs,
+                        boolean useBot, boolean isReplay) {
+    replay = new Replay(this);
+    this.isReplay = isReplay;
     this.rowCount = rowCount;
     this.columnCount = columnCount;
     this.countOfBombs = countOfBombs;
     this.countOfFlags = 0;
+
+    bombs = new ArrayList<Integer>();
+    clicks = new ArrayList<Integer>();
 
     inGame = true;
 
@@ -53,16 +79,44 @@ class Board extends GridPane {
     }
 
     setAlignment(Pos.CENTER);
-    setMines();
 
-    if (useBot) {
-      bot = new Bot(this);
-    }
-    else {
-      setMouseEvents();
+    if (!isReplay) {
+      setMines();
+      if (useBot) {
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        exec.execute(new Bot(this));
+        exec.shutdown();
+      } else {
+        setMouseEvents();
+      }
+    } else {
+      try {
+        InputStream inputStream = new FileInputStream(REPLAY_FILE_NAME);
+
+        this.rowCount = inputStream.read();
+        this.columnCount = inputStream.read();
+        this.countOfBombs = inputStream.read();
+
+        for (int i = 0; i < this.countOfBombs * 2; i++) {
+          bombs.add(inputStream.read());
+        }
+
+        setMines();
+
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(replay);
+        service.shutdown();
+
+        inputStream.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
   }
 
+  /**
+   * Set events for mouse
+   */
   public void setMouseEvents() {
     for (int i = 0; i < rowCount; i++) {
       for (int j = 0; j < columnCount; j++) {
@@ -71,6 +125,9 @@ class Board extends GridPane {
         cell.setOnMouseClicked(event -> {
           if (inGame && !cell.isOpen()) {
             if (event.getButton().equals(MouseButton.SECONDARY)) {
+              clicks.add(1);
+              clicks.add(GridPane.getRowIndex(cell));
+              clicks.add(GridPane.getColumnIndex(cell));
               if (!cell.isFlag()) {
                 cell.setFlag(true);
                 countOfFlags++;
@@ -84,13 +141,16 @@ class Board extends GridPane {
             }
 
             if (!cell.isFlag()) {
+              clicks.add(0);
+              clicks.add(GridPane.getRowIndex(cell));
+              clicks.add(GridPane.getColumnIndex(cell));
               if (cell.isBomb()) {
                 clearAllCells();
                 cell.onBomb();
               }
               else
               if (cell.isEmpty()) {
-                openEmptyCells(GridPane.getRowIndex(cell), GridPane.getColumnIndex(cell));
+                  openEmptyCells(GridPane.getRowIndex(cell), GridPane.getColumnIndex(cell));
                 if (isWon()) {
                   openWonWindow();
                 }
@@ -109,16 +169,27 @@ class Board extends GridPane {
     }
   }
 
+  /**
+   * Add mines on board
+   */
   public void setMines() {
-    int n = countOfBombs;
+    if (!isReplay) {
+      int n = countOfBombs;
 
-    while (n > 0) {
-      int i = (int) (Math.random() * rowCount);
-      int j = (int) (Math.random() * columnCount);
+      while (n > 0) {
+        int i = (int) (Math.random() * rowCount);
+        int j = (int) (Math.random() * columnCount);
 
-      if (!cells[i][j].isBomb()) {
-        cells[i][j].setBomb(true);
-        n--;
+        if (!cells[i][j].isBomb()) {
+          cells[i][j].setBomb(true);
+          n--;
+          bombs.add(i);
+          bombs.add(j);
+        }
+      }
+    } else {
+      for (int i = 0; i < bombs.size(); i += 2) {
+        cells[bombs.get(i)][bombs.get(i+1)].setBomb(true);
       }
     }
 
@@ -130,6 +201,11 @@ class Board extends GridPane {
     }
   }
 
+  /**
+   * Counts the number of neighbor mines
+   * @param x cell coordinate in row
+   * @param y cell coordinate in column
+   */
   public void countOfNeighbors(int x, int y) {
     for (int i = -1; i <= 1; i++) {
       int newX = x + i;
@@ -156,6 +232,11 @@ class Board extends GridPane {
     }
   }
 
+  /**
+   * Opens the cell if empty
+   * @param x cell coordinate in row
+   * @param y cell coordinate in column
+   */
   public void openEmptyCells(int x, int y) {
     for (int i = -1; i <= 1; i++) {
       int newX = x + i;
@@ -181,6 +262,11 @@ class Board extends GridPane {
     }
   }
 
+  /**
+   * Open cells around empty cell
+   * @param x cell coordinate in row
+   * @param y cell coordinate in column
+   */
   public void openAroundCells(int x, int y) {
     for (int i = -1; i <= 1; i++) {
       int newX = x + i;
@@ -208,14 +294,22 @@ class Board extends GridPane {
     }
   }
 
+  /**
+   * Open all cells
+   */
   public void clearAllCells() {
     for (int i = 0; i < rowCount; i++) {
       for (int j = 0; j < columnCount; j++) {
         cells[i][j].open();
       }
     }
+    replay.record(rowCount, columnCount, countOfBombs, bombs, clicks);
   }
 
+  /**
+   * Checks if you won
+   * @return true, if you won
+   */
   public boolean isWon() {
     for (int i = 0; i < rowCount; i++) {
       for (int j = 0; j < columnCount; j++) {
@@ -224,9 +318,13 @@ class Board extends GridPane {
         }
       }
     }
+    replay.record(rowCount, columnCount, countOfBombs, bombs, clicks);
     return true;
   }
 
+  /**
+   * Open new window, when you won
+   */
   public void openWonWindow() {
     inGame = false;
 
@@ -257,49 +355,93 @@ class Board extends GridPane {
     });
   }
 
+  /**
+   * @return count of remained bombs
+   */
   public int getRemainedBombs() {
     return countOfBombs - countOfFlags;
   }
 
+  /**
+   * Use this method for open cells in bot
+   * @param x cell coordinate in row
+   * @param y cell coordinate in column
+   */
   public void openCell(int x, int y) {
-    synchronized (this) {
-      Cell cell = cells[x][y];
+    Cell cell = cells[x][y];
 
-      if (inGame && !cell.isOpen()) {
-        if (!cell.isFlag()) {
-          cell.open();
-          if (cell.isBomb()) {
-            clearAllCells();
-            cell.onBomb();
-            inGame = false;
-          } else if (cell.isEmpty()) {
-            openEmptyCells(x, y);
-            if (isWon()) {
-              openWonWindow();
-              inGame = false;
-            }
-          } else if (!cell.isEmpty()) {
-            cell.open();
-            if (isWon()) {
-              openWonWindow();
-              inGame = false;
-            }
-          }
+    if (!cell.isFlag()) {
+      clicks.add(0);
+      clicks.add(x);
+      clicks.add(y);
+      if (cell.isBomb()) {
+        clearAllCells();
+        cell.onBomb();
+        inGame = false;
+      } else if (cell.isEmpty()) {
+        openEmptyCells(x, y);
+        if (isWon()) {
+          openWonWindow();
+          inGame = false;
+        }
+      } else if (!cell.isEmpty()) {
+        cell.open();
+        if (isWon()) {
+          openWonWindow();
+          inGame = false;
         }
       }
-      this.notify();
     }
   }
 
+  /**
+   * Set flag in cell with coordinates (x, y)
+   * @param x cell coordinate in row
+   * @param y cell coordinate in column
+   */
+  public void setFlag(int x, int y) {
+    if (cells[x][y].isFlag()) {
+      cells[x][y].setFlag(false);
+    } else {
+      cells[x][y].setFlag(true);
+    }
+  }
+
+  /**
+   * Checking, if cell is open
+   * @param x cell coordinate in row
+   * @param y cell coordinate in column
+   * @return true, if cell is open
+   */
+  public boolean cellIsOpen(int x, int y) {
+    return cells[x][y].isOpen();
+  }
+
+  /**
+   * @return count of rows
+   */
   public int getRowCount() {
     return rowCount;
   }
 
+  /**
+   * @return count of columns
+   */
   public int getColumnCount() {
     return columnCount;
   }
 
+  /**
+   * @return true, if you still in game
+   */
   public boolean isInGame() {
     return inGame;
+  }
+
+  /**
+   * @return count of bombs
+   */
+  public int getCountOfBombs() {
+    return countOfBombs;
   }
 }

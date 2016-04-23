@@ -8,6 +8,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 
+/**
+ * Describe cell
+ */
 public class Cell extends StackPane{
   private final int CELL_WIDTH = 20;
   private final int CELL_HEIGHT = 20;
@@ -26,6 +29,9 @@ public class Cell extends StackPane{
   private Rectangle rect;
   private Label label;
 
+  /**
+   * Class constructor
+   */
   public Cell() {
     bomb = false;
     open = false;
@@ -42,6 +48,10 @@ public class Cell extends StackPane{
     getChildren().addAll(rect, label);
   }
 
+  /**
+   * Set bomb in this cell
+   * @param b true, if we should set bomb in this cell
+   */
   public void setBomb(boolean b) {
     bomb = b;
     if (bomb) {
@@ -49,10 +59,16 @@ public class Cell extends StackPane{
     }
   }
 
+  /**
+   * Increments count of neighbors
+   */
   public void addNeighbor() {
         neighbors++;
     }
 
+  /**
+   * Open this cell
+   */
   public void open() {
     if (isOpen())
       return;
@@ -91,29 +107,51 @@ public class Cell extends StackPane{
     }
   }
 
+  /**
+   * @return true, if cell has bomb
+   */
   public boolean isBomb() {
         return bomb;
     }
 
+  /**
+   * @return true, if cell is open
+   */
   public boolean isOpen() { return open; }
 
+  /**
+   * @return true, if cell has flag
+   */
   public boolean isFlag() { return flag; }
 
+  /**
+   * @return true, if cell is empty
+   */
   public boolean isEmpty() {
         return label.getText() == null;
     }
 
+  /**
+   * Sets count of neighbors in rectangle
+   */
   public void setText() {
     if (!bomb && neighbors != 0) {
       label.setText(String.valueOf(neighbors));
     }
   }
 
+  /**
+   * Performed, if you clicked on cell with bomb
+   */
   public void onBomb() {
     rect.setFill(Color.RED);
     label.setVisible(true);
   }
 
+  /**
+   * Set flag on this cell
+   * @param flag true, if we need to set flag
+   */
   public void setFlag(boolean flag) {
     this.flag = flag;
     if (flag) {
@@ -133,6 +171,10 @@ public class Cell extends StackPane{
     }
   }
 
+  /**
+   * Set necessary image on cell
+   * @param path path to image
+   */
   public void setImage(String path) {
     Image image = new Image(getClass().getResourceAsStream(path));
     ImageView img = new ImageView(image);

@@ -4,37 +4,38 @@ package sample;
 import static java.lang.Thread.sleep;
 
 /**
- * Created by yura_str on 3/31/16.
+ * Create bot in another thread
  */
-
 public class Bot implements Runnable {
   private static final int SLEEP_TIME = 700;
 
-  private Thread thread;
   private Board board = new Board();
 
+  /**
+   * Class constructor
+   * @param board main board with mines
+   */
   public Bot(Board board) {
-    thread = new Thread(this);
     this.board = board;
-    thread.start();
   }
 
+  /**
+   * Overridden method from interface "Runnable"
+   */
   public void run() {
     while (true) {
       if (board.isInGame()) {
         int i = (int) (Math.random() * board.getRowCount());
         int j = (int) (Math.random() * board.getColumnCount());
-        synchronized (board) {
+        if (!board.cellIsOpen(i, j)) {
           board.openCell(i, j);
           try {
-            board.wait();
             sleep(SLEEP_TIME);
           } catch (InterruptedException exc) {
             System.out.println(exc.getMessage());
           }
         }
-      }
-      else {
+      } else {
         break;
       }
     }
