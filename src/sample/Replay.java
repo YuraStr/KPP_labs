@@ -4,12 +4,13 @@ import javafx.application.Platform;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * Recording and playback of replays
  */
 public class Replay implements Runnable{
-  private static final String REPLAY_FILE_NAME = "Replay.txt";
+  private String replayName;
 
   private Board board;
 
@@ -17,7 +18,11 @@ public class Replay implements Runnable{
    * Class constructor
    * @param board main board with cells
    */
-  public Replay(Board board) {
+  public Replay(Board board, String replayName) {
+    if (!new File("Replays/").exists()) {
+      new File("Replays/").mkdirs();
+    }
+    this.replayName = replayName;
     this.board = board;
   }
 
@@ -26,7 +31,7 @@ public class Replay implements Runnable{
    */
   public void run() {
     try {
-      InputStream inputStream = new FileInputStream(REPLAY_FILE_NAME);
+      InputStream inputStream = new FileInputStream(replayName);
 
       for (int i = 0; i < board.getCountOfBombs() * 2 + 3; i++) {
         inputStream.read();
@@ -72,7 +77,7 @@ public class Replay implements Runnable{
   public void record(int countOfRows, int countOfColumns, int countOfBombs,
                      ArrayList<Integer> bombs, ArrayList<Integer> clicks) {
     try {
-      OutputStream outputStream = new FileOutputStream(REPLAY_FILE_NAME);
+      OutputStream outputStream = new FileOutputStream("Replays/" + new Date().toString());
 
       outputStream.write(countOfRows);
       outputStream.write(countOfColumns);

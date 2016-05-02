@@ -1,22 +1,27 @@
 package sample;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Menu window and main window
@@ -29,7 +34,18 @@ public class Interface {
   private static final int REPLAY_BUTTON_HEIGHT = 10;
   private static final int REPLAY_BUTTON_WIDTH = 150;
 
-  private static final int FONT_SIZE = 14;
+  private static final int TABLE_HEIGHT = 450;
+  private static final int TABLE_WIDTH = 480;
+  private static final int DATE_COLUMN_WIDTH = 180;
+  private static final int BOMBS_COLUMN_WIDTH = 100;
+  private static final int ROW_COLUMN_WIDTH = 100;
+  private static final int COLUMN_COLUMN_WIDTH = 100;
+
+  private static final int REPLAYS_SCENE_WIDTH = 500;
+  private static final int REPLAYS_SCENE_HEIGHT = 550;
+
+  private static final int FONT_SIZE_14 = 14;
+  private static final int FONT_SIZE_20 = 20;
 
   private static final int CELL_WIDTH = 20;
   private static final int CELL_HEIGHT = 20;
@@ -52,9 +68,11 @@ public class Interface {
   private static final int BOTTOM_INDENT = -15;
   private static final int OFFSET = 100;
 
-  private Stage stage;
+  private static final String REPLAY_FOLDER = "Replays/";
 
+  private Stage stage;
   private boolean inReplay = false;
+  private String replayFileName = null;
 
   /**
    * Class constructor
@@ -72,14 +90,14 @@ public class Interface {
 
     HBox hBoxTop = new HBox();
     Text welcomeText = new Text("Welcome to the game \"Minesweeper\"!");
-    welcomeText.setFont(Font.font("Arial", FontWeight.NORMAL, FONT_SIZE));
+    welcomeText.setFont(Font.font("Arial", FontWeight.NORMAL, FONT_SIZE_14));
     hBoxTop.setAlignment(Pos.CENTER);
     hBoxTop.getChildren().add(welcomeText);
     hBoxTop.setTranslateY(TOP_INDENT);
     borderPane.setTop(hBoxTop);
 
     Text difficultText = new Text("Select difficulty level");
-    difficultText.setFont(Font.font(FONT_SIZE));
+    difficultText.setFont(Font.font(FONT_SIZE_14));
 
     ToggleGroup toggleGroup = new ToggleGroup();
 
@@ -147,19 +165,7 @@ public class Interface {
     });
 
     replayButton.setOnMouseClicked(event -> {
-        try {
-          InputStream inputStream = new FileInputStream("Replay.txt");
-
-          int rowCount = inputStream.read();
-          int columnCount = inputStream.read();
-          int countOfBombs = inputStream.read();
-
-          inReplay = true;
-
-          Game(rowCount, columnCount, countOfBombs, false);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+      Replays();
     });
   }
 
@@ -174,6 +180,7 @@ public class Interface {
     BorderPane root = new BorderPane();
 
     Board board = new Board();
+    board.setReplayFileName(replayFileName);
     board.initCells(rowCount, columnCount, countOfMines, useBot, inReplay);
     root.setCenter(board);
 
@@ -208,5 +215,110 @@ public class Interface {
     Scene scene = new Scene(root, columnCount * CELL_WIDTH + OFFSET, rowCount * CELL_HEIGHT + OFFSET);
     stage.setScene(scene);
     stage.show();
+  }
+
+  public void Replays() {
+    File file = new File(REPLAY_FOLDER);
+    String[] files = file.list();
+    List<FileData> data = new ArrayList<>();
+
+    Pane root = new Pane();
+
+    Label label = new Label("Replays");
+    label.setFont(Font.font(FONT_SIZE_20));
+
+    TableView<FileData> tableView = new TableView<>();
+    tableView.setPrefHeight(TABLE_HEIGHT);
+    tableView.setPrefWidth(TABLE_WIDTH);
+
+    TableColumn<FileData, String> dateColumn = new TableColumn<>("Date and time");
+    TableColumn<FileData, Integer> bombsColumn = new TableColumn<>("Bombs");
+    TableColumn<FileData, Integer> rowCountColumn = new TableColumn<>("Rows");
+    TableColumn<FileData, Integer> columnCountColumn = new TableColumn<>("Columns");
+
+    dateColumn.setPrefWidth(DATE_COLUMN_WIDTH);
+    bombsColumn.setPrefWidth(BOMBS_COLUMN_WIDTH);
+    rowCountColumn.setPrefWidth(ROW_COLUMN_WIDTH);
+    columnCountColumn.setPrefWidth(COLUMN_COLUMN_WIDTH);
+
+    dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+    bombsColumn.setCellValueFactory(new PropertyValueFactory<>("bombs"));
+    rowCountColumn.setCellValueFactory(new PropertyValueFactory<>("rows"));
+    columnCountColumn.setCellValueFactory(new PropertyValueFactory<>("columns"));
+
+    int rowCount;
+    int columnCount;
+    int countOfBombs;
+
+    for (String fileName : files) {
+      try {
+        InputStream inputStream = new FileInputStream(REPLAY_FOLDER + fileName);
+
+        rowCount = inputStream.read();
+        columnCount = inputStream.read();
+        countOfBombs = inputStream.read();
+
+        data.add(new FileData(fileName, countOfBombs, rowCount, columnCount));
+
+        inputStream.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    sortItems(data);
+
+    ObservableList<FileData> observableList = FXCollections.observableList(data);
+    tableView.setItems(observableList);
+    tableView.getColumns().addAll(dateColumn, bombsColumn, rowCountColumn, columnCountColumn);
+
+    Button playButton = new Button("Play");
+    playButton.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
+    playButton.setDisable(true);
+
+    playButton.setOnMouseClicked(event -> {
+      FileData fileData = tableView.getSelectionModel().getSelectedItem();
+      inReplay = true;
+      replayFileName = REPLAY_FOLDER + fileData.getDate();
+      Game(fileData.getRows(), fileData.getColumns(), fileData.getBombs(), false);
+    });
+
+    tableView.setOnMouseClicked(event -> {
+      playButton.setDisable(false);
+    });
+
+    VBox vBox = new VBox();
+    vBox.setSpacing(SPACING_1);
+    vBox.setPadding(new Insets(10, 0, 0, 10));
+    vBox.setAlignment(Pos.CENTER);
+    vBox.getChildren().addAll(label, tableView, playButton);
+
+    root.getChildren().add(vBox);
+
+    Scene scene = new Scene(root, REPLAYS_SCENE_WIDTH, REPLAYS_SCENE_HEIGHT);
+    stage.setScene(scene);
+    stage.show();
+  }
+
+  public void sortItems(List<FileData> data) {
+    long start, end;
+
+    int[] array = new int[data.size()];
+    for (int j = 0; j < data.size(); j++) {
+      array[j] = data.get(j).getBombs();
+    }
+    int[] array2 = array.clone();
+
+    JavaSort javaSort = new JavaSort();
+    start = System.nanoTime();
+    javaSort.sort(array);
+    end = System.nanoTime();
+    System.out.println("Java:  " + (end - start));
+
+    ScalaFunctions scalaSort = new ScalaFunctions();
+    start = System.nanoTime();
+    scalaSort.qsort(array2, 0, array2.length - 1);
+    end = System.nanoTime();
+    System.out.println("Scala: " + (end - start));
   }
 }

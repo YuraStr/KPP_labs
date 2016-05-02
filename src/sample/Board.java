@@ -24,8 +24,6 @@ import java.util.concurrent.Executors;
  * some methods for work with board
  */
 class Board extends GridPane {
-  private static final String REPLAY_FILE_NAME = "Replay.txt";
-
   private static final int WONWINDOW_WIDTH = 250;
   private static final int WONWINDOW_HEIGHT = 120;
   private static final int FONT_SIZE = 14;
@@ -35,6 +33,8 @@ class Board extends GridPane {
   private int columnCount;
   private int countOfBombs;
   private int countOfFlags;
+
+  private String replayFileName;
 
   private ArrayList<Integer> bombs;
   private ArrayList<Integer> clicks;
@@ -56,15 +56,15 @@ class Board extends GridPane {
    */
   public void initCells(int rowCount, int columnCount, int countOfBombs,
                         boolean useBot, boolean isReplay) {
-    replay = new Replay(this);
+    replay = new Replay(this, replayFileName);
     this.isReplay = isReplay;
     this.rowCount = rowCount;
     this.columnCount = columnCount;
     this.countOfBombs = countOfBombs;
     this.countOfFlags = 0;
 
-    bombs = new ArrayList<Integer>();
-    clicks = new ArrayList<Integer>();
+    bombs = new ArrayList<>();
+    clicks = new ArrayList<>();
 
     inGame = true;
 
@@ -91,7 +91,7 @@ class Board extends GridPane {
       }
     } else {
       try {
-        InputStream inputStream = new FileInputStream(REPLAY_FILE_NAME);
+        InputStream inputStream = new FileInputStream(replayFileName);
 
         this.rowCount = inputStream.read();
         this.columnCount = inputStream.read();
@@ -201,6 +201,10 @@ class Board extends GridPane {
     }
   }
 
+  public void setReplayFileName(String replayFileName) {
+    this.replayFileName = replayFileName;
+  }
+
   /**
    * Counts the number of neighbor mines
    * @param x cell coordinate in row
@@ -303,7 +307,9 @@ class Board extends GridPane {
         cells[i][j].open();
       }
     }
-    replay.record(rowCount, columnCount, countOfBombs, bombs, clicks);
+    if (!isReplay) {
+      replay.record(rowCount, columnCount, countOfBombs, bombs, clicks);
+    }
   }
 
   /**
@@ -318,7 +324,9 @@ class Board extends GridPane {
         }
       }
     }
-    replay.record(rowCount, columnCount, countOfBombs, bombs, clicks);
+    if (!isReplay) {
+      replay.record(rowCount, columnCount, countOfBombs, bombs, clicks);
+    }
     return true;
   }
 
@@ -402,8 +410,10 @@ class Board extends GridPane {
   public void setFlag(int x, int y) {
     if (cells[x][y].isFlag()) {
       cells[x][y].setFlag(false);
+      countOfFlags--;
     } else {
       cells[x][y].setFlag(true);
+      countOfFlags++;
     }
   }
 

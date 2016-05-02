@@ -1,6 +1,5 @@
 package sample;
 
-
 import static java.lang.Thread.sleep;
 
 /**
