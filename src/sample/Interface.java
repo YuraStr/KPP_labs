@@ -15,6 +15,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import scala.Int;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,7 +29,7 @@ import java.util.List;
  */
 public class Interface {
   private static final int SCENE_HEIGHT = 300;
-  private static final int SCENE_WIDTH = 350;
+  private static final int SCENE_WIDTH = 400;
   private static final int BUTTON_HEIGHT = 10;
   private static final int BUTTON_WIDTH = 100;
   private static final int REPLAY_BUTTON_HEIGHT = 10;
@@ -43,6 +44,9 @@ public class Interface {
 
   private static final int REPLAYS_SCENE_WIDTH = 500;
   private static final int REPLAYS_SCENE_HEIGHT = 550;
+
+  private static final int STATISTICS_SCENE_WIDTH = 250;
+  private static final int STATISTICS_SCENE_HEIGHT = 200;
 
   private static final int FONT_SIZE_14 = 14;
   private static final int FONT_SIZE_20 = 20;
@@ -62,8 +66,8 @@ public class Interface {
   private static final int PRO_COLUMNS = 30;
   private static final int PRO_BOMBS = 99;
 
-  private static final int SPACING_1 = 10;
-  private static final int SPACING_2 = 40;
+  private static final int SPACING_1 = 15;
+  private static final int SPACING_2 = 20;
   private static final int TOP_INDENT = 10;
   private static final int BOTTOM_INDENT = -15;
   private static final int OFFSET = 100;
@@ -111,29 +115,36 @@ public class Interface {
     RadioButton radioButtonPro = new RadioButton("Professional");
     radioButtonPro.setToggleGroup(toggleGroup);
 
+    CheckBox useBotCheckBox = new CheckBox("Use bot");
+    useBotCheckBox.setAlignment(Pos.CENTER);
+
+    Button startButton = new Button("Start");
+    startButton.setPrefWidth(BUTTON_WIDTH);
+    startButton.setPrefHeight(BUTTON_HEIGHT);
+    startButton.setAlignment(Pos.CENTER);
+
     VBox vBox = new VBox();
     vBox.getChildren().add(difficultText);
-    vBox.getChildren().addAll(radioButtonBeginner, radioButtonAdvanced, radioButtonPro);
+    vBox.getChildren().addAll(radioButtonBeginner, radioButtonAdvanced, radioButtonPro,
+                              useBotCheckBox, startButton);
     vBox.setAlignment(Pos.CENTER);
     vBox.setSpacing(SPACING_1);
     borderPane.setCenter(vBox);
 
     VBox vBoxBottom = new VBox();
-    Button startButton = new Button("Start");
-    startButton.setPrefWidth(BUTTON_WIDTH);
-    startButton.setPrefHeight(BUTTON_HEIGHT);
-    startButton.setAlignment(Pos.CENTER);
     Button replayButton = new Button("Watch last replay");
     replayButton.setPrefWidth(REPLAY_BUTTON_WIDTH);
     replayButton.setPrefHeight(REPLAY_BUTTON_HEIGHT);
     replayButton.setAlignment(Pos.CENTER);
 
-    CheckBox useBotCheckBox = new CheckBox("Use bot");
-    useBotCheckBox.setAlignment(Pos.CENTER);
+    Button statisticsButton = new Button("Statistics");
+    statisticsButton.setPrefWidth(BUTTON_WIDTH);
+    statisticsButton.setPrefHeight(BUTTON_HEIGHT);
+    statisticsButton.setAlignment(Pos.CENTER);
 
     vBoxBottom.setAlignment(Pos.CENTER);
     vBoxBottom.setSpacing(SPACING_2);
-    vBoxBottom.getChildren().addAll(useBotCheckBox, startButton, replayButton);
+    vBoxBottom.getChildren().addAll(statisticsButton, replayButton);
     vBoxBottom.setTranslateY(BOTTOM_INDENT);
     borderPane.setBottom(vBoxBottom);
 
@@ -166,6 +177,10 @@ public class Interface {
 
     replayButton.setOnMouseClicked(event -> {
       Replays();
+    });
+
+    statisticsButton.setOnMouseClicked(event -> {
+      StatisticWindow();
     });
   }
 
@@ -218,10 +233,6 @@ public class Interface {
   }
 
   public void Replays() {
-    File file = new File(REPLAY_FOLDER);
-    String[] files = file.list();
-    List<FileData> data = new ArrayList<>();
-
     Pane root = new Pane();
 
     Label label = new Label("Replays");
@@ -246,29 +257,7 @@ public class Interface {
     rowCountColumn.setCellValueFactory(new PropertyValueFactory<>("rows"));
     columnCountColumn.setCellValueFactory(new PropertyValueFactory<>("columns"));
 
-    int rowCount;
-    int columnCount;
-    int countOfBombs;
-
-    for (String fileName : files) {
-      try {
-        InputStream inputStream = new FileInputStream(REPLAY_FOLDER + fileName);
-
-        rowCount = inputStream.read();
-        columnCount = inputStream.read();
-        countOfBombs = inputStream.read();
-
-        data.add(new FileData(fileName, countOfBombs, rowCount, columnCount));
-
-        inputStream.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    sortItems(data);
-
-    ObservableList<FileData> observableList = FXCollections.observableList(data);
+    ObservableList<FileData> observableList = FXCollections.observableList(getListOfReplays());
     tableView.setItems(observableList);
     tableView.getColumns().addAll(dateColumn, bombsColumn, rowCountColumn, columnCountColumn);
 
@@ -300,6 +289,36 @@ public class Interface {
     stage.show();
   }
 
+  public List<FileData> getListOfReplays() {
+    File file = new File(REPLAY_FOLDER);
+    String[] files = file.list();
+    List<FileData> data = new ArrayList<>();
+
+    int rowCount;
+    int columnCount;
+    int countOfBombs;
+
+    for (String fileName : files) {
+      try {
+        InputStream inputStream = new FileInputStream(REPLAY_FOLDER + fileName);
+
+        rowCount = inputStream.read();
+        columnCount = inputStream.read();
+        countOfBombs = inputStream.read();
+
+        data.add(new FileData(fileName, countOfBombs, rowCount, columnCount));
+
+        inputStream.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    sortItems(data);
+
+    return data;
+  }
+
   public void sortItems(List<FileData> data) {
     long start, end;
 
@@ -320,5 +339,49 @@ public class Interface {
     scalaSort.qsort(array2, 0, array2.length - 1);
     end = System.nanoTime();
     System.out.println("Scala: " + (end - start));
+  }
+
+  public void StatisticWindow() {
+    BorderPane root = new BorderPane();
+    Statistics statistics = new Statistics();
+
+    ScalaFunctions scalaFunctions = new ScalaFunctions();
+
+    Label rightClicksLabel = new Label("Count of right clicks: " +
+      scalaFunctions.getRightClicks(statistics.getClicksArray()));
+    Label leftClicksLabel  = new Label("Count of left clicks: " +
+      scalaFunctions.getLeftClicks(statistics.getClicksArray()));
+    Label rowsLabel = new Label("Count of rows: " +
+      statistics.getCountOfRows());
+    Label columnsLabel = new Label("Count of columns: " +
+      statistics.getCountOfColumns());
+    Label bombsLabel = new Label("Count of bombs: " +
+      statistics.getCountOfBombs());
+
+    VBox vBox = new VBox();
+    vBox.setAlignment(Pos.CENTER);
+    vBox.getChildren().addAll(rightClicksLabel, leftClicksLabel, rowsLabel,
+      columnsLabel, bombsLabel);
+
+    Button backButton = new Button("Back");
+    backButton.setAlignment(Pos.CENTER);
+    backButton.setPrefWidth(BUTTON_WIDTH);
+    backButton.setPrefHeight(BUTTON_HEIGHT);
+
+    backButton.setOnMouseClicked(event -> {
+      Menu();
+    });
+
+    VBox vBoxBot = new VBox();
+    vBoxBot.setAlignment(Pos.CENTER);
+    vBoxBot.setTranslateY(BOTTOM_INDENT);
+    vBoxBot.getChildren().add(backButton);
+
+    root.setCenter(vBox);
+    root.setBottom(vBoxBot);
+
+    Scene scene = new Scene(root, STATISTICS_SCENE_WIDTH, STATISTICS_SCENE_HEIGHT);
+    stage.setScene(scene);
+    stage.show();
   }
 }

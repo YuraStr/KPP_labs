@@ -19,4 +19,16 @@ class ScalaFunctions {
     if (l < j) qsort(xs, l, j)
     if (i < r) qsort(xs, i, r)
   }
+
+  def getSeqOfClicks(xs: Array[Int], toFind: Int) : Seq[Int] = {
+    for (i <- xs.indices if xs(i) == toFind) yield xs(i)
+  }
+
+  def getRightClicks(array: Array[Int]) : Int = {
+    getSeqOfClicks(array, 1).length
+  }
+
+  def getLeftClicks(array: Array[Int]) : Int = {
+    getSeqOfClicks(array, 0).length
+  }
 }
