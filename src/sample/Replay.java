@@ -5,14 +5,19 @@ import javafx.application.Platform;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Recording and playback of replays
  */
 public class Replay implements Runnable{
   private String replayName;
-
+  private String translatedReplayName;
   private Board board;
+
+  private List<Integer> replayArray;
+  private InputStream inputStream;
+  private OutputStream outputStream;
 
   /**
    * Class constructor
@@ -22,7 +27,13 @@ public class Replay implements Runnable{
     if (!new File("Replays/").exists()) {
       new File("Replays/").mkdirs();
     }
+    if (!new File("TranslatedReplays/").exists()) {
+      new File("TranslatedReplays/").mkdirs();
+    }
     this.replayName = replayName;
+    if (replayName != null) {
+      this.translatedReplayName = "TranslatedReplays/" + this.replayName.substring(8) + "_tr";
+    }
     this.board = board;
   }
 
@@ -31,10 +42,12 @@ public class Replay implements Runnable{
    */
   public void run() {
     try {
-      InputStream inputStream = new FileInputStream(replayName);
+      inputStream = new FileInputStream(replayName);
+      replayArray = new ArrayList<>();
+      int[] array;
 
       for (int i = 0; i < board.getCountOfBombs() * 2 + 3; i++) {
-        inputStream.read();
+        replayArray.add(inputStream.read());
       }
 
       while (true) {
@@ -44,7 +57,9 @@ public class Replay implements Runnable{
 
         Thread.sleep(700);
 
-        if (mouse == -1) break;
+        if (mouse == -1) {
+          break;
+        }
 
         Platform.runLater(new Runnable() {
           @Override
@@ -54,12 +69,20 @@ public class Replay implements Runnable{
             } else {
               board.setFlag(x, y);
             }
+            replayArray.add(mouse);
+            replayArray.add(x);
+            replayArray.add(y);
           }
         });
-
-        System.out.println(mouse + " " + x + " " + y);
       }
 
+      array = new int[replayArray.size()];
+      int temp = replayArray.size();
+      for (int i = 0; i < temp; i++) {
+        array[i] = replayArray.get(i);
+      }
+
+      Translator.parse(array, translatedReplayName);
       inputStream.close();
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
@@ -77,7 +100,7 @@ public class Replay implements Runnable{
   public void record(int countOfRows, int countOfColumns, int countOfBombs,
                      ArrayList<Integer> bombs, ArrayList<Integer> clicks) {
     try {
-      OutputStream outputStream = new FileOutputStream("Replays/" + new Date().toString());
+      outputStream = new FileOutputStream("Replays/" + new Date().toString());
 
       outputStream.write(countOfRows);
       outputStream.write(countOfColumns);

@@ -7,10 +7,11 @@ import javafx.stage.Stage;
  * Main class
  */
 public class Main extends Application {
+  private Interface anInterface;
 
   @Override
   public void start(Stage primaryStage) throws Exception {
-    Interface anInterface = new Interface(primaryStage);
+    anInterface = new Interface(primaryStage);
     anInterface.Menu();
   }
 
